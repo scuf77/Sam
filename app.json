@@ -1,0 +1,37 @@
+{
+  "name": "cake-order-bot",
+  "description": "Telegram бот для заказа тортов",
+  "repository": "https://github.com/yourusername/cake-order-bot",
+  "keywords": ["python", "telegram", "bot", "aiogram"],
+  "env": {
+    "BOT_TOKEN": {
+      "description": "Токен вашего Telegram бота (получите у @BotFather)",
+      "required": true
+    },
+    "MANAGER_CHAT_ID": {
+      "description": "ID чата менеджера (ваша частная беседа с ботом)",
+      "required": true
+    },
+    "ENABLE_ORDER_NOTIFICATIONS": {
+      "description": "Включить уведомления о заказах (true/false)",
+      "value": "true",
+      "required": false
+    },
+    "ORDER_NOTIFICATION_TEMPLATE": {
+      "description": "Шаблон уведомлений о заказах",
+      "value": "default",
+      "required": false
+    }
+  },
+  "formation": {
+    "web": {
+      "quantity": 1,
+      "size": "basic"
+    }
+  },
+  "buildpacks": [
+    {
+      "url": "heroku/python"
+    }
+  ]
+}
