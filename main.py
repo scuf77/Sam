@@ -83,7 +83,13 @@ async def show_catalog(message: Message | CallbackQuery):
     if isinstance(message, Message):
         await message.answer(text, reply_markup=catalog_kb())
     else:
-        await message.message.edit_text(text, reply_markup=catalog_kb())
+        # Удаляем предыдущее сообщение (фото торта) при переходе в каталог
+        try:
+            await message.message.delete()
+        except:
+            pass
+        # Отправляем новое сообщение с каталогом
+        await message.message.answer(text, reply_markup=catalog_kb())
 
 
 async def open_cake_card(callback: CallbackQuery):
@@ -93,7 +99,8 @@ async def open_cake_card(callback: CallbackQuery):
         await callback.answer("Товар не найден", show_alert=True)
         return
     
-    text = (
+    # Формируем подпись к фото с полной информацией
+    photo_caption = (
         f"🍰 <b>{cake.name}</b>\n\n"
         f"📝 {cake.description}\n\n"
         f"💰 <b>Цена: {cake.price}₽</b>\n\n"
@@ -101,13 +108,12 @@ async def open_cake_card(callback: CallbackQuery):
     )
     
     if callback.message:
-        # Сначала отправляем фото
+        # Отправляем фото с полной информацией в подписи
         await callback.message.answer_photo(
             photo=cake.photo_url,
-            caption="📸 Фото торта:"
+            caption=photo_caption,
+            reply_markup=cake_card_kb(cake, callback.from_user.id)
         )
-        # Затем отправляем карточку с кнопками
-        await callback.message.answer(text, reply_markup=cake_card_kb(cake, callback.from_user.id))
     await callback.answer()
 
 
@@ -146,7 +152,7 @@ async def add_to_cart(callback: CallbackQuery):
         if callback.message:
             cake = get_cake_by_id(cake_id)
             if cake:
-                # Обновляем клавиатуру
+                # Обновляем клавиатуру для сообщения с фото
                 await callback.message.edit_reply_markup(
                     reply_markup=cake_card_kb(cake, user_id)
                 )
