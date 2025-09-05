@@ -101,13 +101,13 @@ async def open_cake_card(callback: CallbackQuery):
     )
     
     if callback.message:
-        # Отправляем фото с подписью
-        await callback.message.delete()
+        # Сначала отправляем фото
         await callback.message.answer_photo(
             photo=cake.photo_url,
-            caption=text,
-            reply_markup=cake_card_kb(cake, callback.from_user.id)
+            caption="📸 Фото торта:"
         )
+        # Затем отправляем карточку с кнопками
+        await callback.message.answer(text, reply_markup=cake_card_kb(cake, callback.from_user.id))
     await callback.answer()
 
 
@@ -146,7 +146,7 @@ async def add_to_cart(callback: CallbackQuery):
         if callback.message:
             cake = get_cake_by_id(cake_id)
             if cake:
-                # Обновляем только клавиатуру для сообщения с фото
+                # Обновляем клавиатуру
                 await callback.message.edit_reply_markup(
                     reply_markup=cake_card_kb(cake, user_id)
                 )
