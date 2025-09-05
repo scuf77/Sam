@@ -81,6 +81,12 @@ async def show_catalog(message: Message | CallbackQuery):
         "💡 Все торты готовятся из свежих ингредиентов по домашним рецептам."
     )
     if isinstance(message, Message):
+        # Удаляем предыдущее сообщение (главное меню) при переходе в каталог
+        try:
+            await message.delete()
+        except:
+            pass
+        # Отправляем новое сообщение с каталогом
         await message.answer(text, reply_markup=catalog_kb())
     else:
         # Удаляем предыдущее сообщение при переходе в каталог
@@ -170,6 +176,12 @@ async def open_cart(event: Message | CallbackQuery):
     text = cart_text(user_id)
     has_items = bool(CARTS[user_id])
     if isinstance(event, Message):
+        # Удаляем предыдущее сообщение (главное меню) при открытии корзины
+        try:
+            await event.delete()
+        except:
+            pass
+        # Отправляем новое сообщение с корзиной
         await event.answer(text, reply_markup=cart_kb(has_items))
     else:
         if event.message:
