@@ -83,7 +83,7 @@ async def show_catalog(message: Message | CallbackQuery):
     if isinstance(message, Message):
         await message.answer(text, reply_markup=catalog_kb())
     else:
-        # Удаляем предыдущее сообщение (фото торта) при переходе в каталог
+        # Удаляем предыдущее сообщение при переходе в каталог
         try:
             await message.message.delete()
         except:
@@ -108,6 +108,11 @@ async def open_cake_card(callback: CallbackQuery):
     )
     
     if callback.message:
+        # Удаляем предыдущее сообщение (каталог) при открытии карточки торта
+        try:
+            await callback.message.delete()
+        except:
+            pass
         # Отправляем фото с полной информацией в подписи
         await callback.message.answer_photo(
             photo=cake.photo_url,
@@ -168,7 +173,13 @@ async def open_cart(event: Message | CallbackQuery):
         await event.answer(text, reply_markup=cart_kb(has_items))
     else:
         if event.message:
-            await event.message.edit_text(text, reply_markup=cart_kb(has_items))
+            # Удаляем предыдущее сообщение при открытии корзины
+            try:
+                await event.message.delete()
+            except:
+                pass
+            # Отправляем новое сообщение с корзиной
+            await event.message.answer(text, reply_markup=cart_kb(has_items))
         await event.answer()
 
 
@@ -257,13 +268,13 @@ async def back_handler(callback: CallbackQuery):
             "🛒 <b>Корзина</b> - оформить заказ\n\n"
             "💡 Выберите действие с помощью кнопок ниже!"
         )
-        # Отправляем новое сообщение с главным меню
-        await callback.message.answer(text, reply_markup=main_menu_kb(callback.from_user.id))
         # Удаляем старое сообщение
         try:
             await callback.message.delete()
         except:
             pass
+        # Отправляем новое сообщение с главным меню
+        await callback.message.answer(text, reply_markup=main_menu_kb(callback.from_user.id))
     elif action == "catalog":
         await show_catalog(callback)
     elif action == "cart":
