@@ -55,8 +55,18 @@ async def cmd_start(message: Message, state: FSMContext):
     logger.info(f"Команда /start от пользователя {message.from_user.id}")
     await state.clear()
     text = (
-        "Привет! Я помогу оформить заказ торта.\n\n"
-        "Нажми 'Каталог', чтобы выбрать торт, или открой корзину."
+        "🎂 <b>Добро пожаловать в кондитерскую!</b> 🎂\n\n"
+        "✨ Мы создаем самые вкусные и красивые торты на заказ!\n\n"
+        "🍰 <b>Наши преимущества:</b>\n"
+        "• Свежие ингредиенты\n"
+        "• Домашние рецепты\n"
+        "• Быстрая доставка\n"
+        "• Индивидуальный подход\n\n"
+        "🎯 <b>Что вы можете сделать:</b>\n"
+        "• Выбрать торт из каталога\n"
+        "• Оформить заказ с доставкой\n"
+        "• Оплатить удобным способом\n\n"
+        "👇 <b>Нажмите кнопку ниже, чтобы начать!</b>"
     )
     await message.answer(text, reply_markup=main_menu_kb(message.from_user.id))
 
@@ -65,7 +75,11 @@ async def cmd_start(message: Message, state: FSMContext):
 
 
 async def show_catalog(message: Message | CallbackQuery):
-    text = "Выберите торт из каталога:"
+    text = (
+        "🍰 <b>Наш каталог тортов</b>\n\n"
+        "✨ Выберите понравившийся торт и нажмите на него, чтобы увидеть фото и подробности!\n\n"
+        "💡 Все торты готовятся из свежих ингредиентов по домашним рецептам."
+    )
     if isinstance(message, Message):
         await message.answer(text, reply_markup=catalog_kb())
     else:
@@ -78,9 +92,22 @@ async def open_cake_card(callback: CallbackQuery):
     if not cake:
         await callback.answer("Товар не найден", show_alert=True)
         return
-    text = f"{cake.name}\n\n{cake.description}\n\nЦена: {cake.price}₽"
+    
+    text = (
+        f"🍰 <b>{cake.name}</b>\n\n"
+        f"📝 {cake.description}\n\n"
+        f"💰 <b>Цена: {cake.price}₽</b>\n\n"
+        f"✨ Добавьте в корзину и оформите заказ!"
+    )
+    
     if callback.message:
-        await callback.message.edit_text(text, reply_markup=cake_card_kb(cake, callback.from_user.id))
+        # Отправляем фото с подписью
+        await callback.message.delete()
+        await callback.message.answer_photo(
+            photo=cake.photo_url,
+            caption=text,
+            reply_markup=cake_card_kb(cake, callback.from_user.id)
+        )
     await callback.answer()
 
 
@@ -119,7 +146,7 @@ async def add_to_cart(callback: CallbackQuery):
         if callback.message:
             cake = get_cake_by_id(cake_id)
             if cake:
-                current_text = callback.message.text
+                # Обновляем только клавиатуру для сообщения с фото
                 await callback.message.edit_reply_markup(
                     reply_markup=cake_card_kb(cake, user_id)
                 )
@@ -219,9 +246,10 @@ async def back_handler(callback: CallbackQuery):
     action = callback.data.split(":", 1)[1]
     if action == "main":
         text = (
-            "Главное меню. Нажмите кнопки ниже.\n\n"
-            "🍰 Каталог - выбрать торт\n"
-            "🛒 Корзина - оформить заказ"
+            "🏠 <b>Главное меню</b>\n\n"
+            "🍰 <b>Каталог</b> - посмотреть наши торты\n"
+            "🛒 <b>Корзина</b> - оформить заказ\n\n"
+            "💡 Выберите действие с помощью кнопок ниже!"
         )
         # Отправляем новое сообщение с главным меню
         await callback.message.answer(text, reply_markup=main_menu_kb(callback.from_user.id))
