@@ -9,9 +9,6 @@ from .catalog import CATALOG, Cake
 
 
 def main_menu_kb(user_id: int = None) -> ReplyKeyboardMarkup:
-    builder = ReplyKeyboardBuilder()
-    builder.button(text="🍰 Каталог")
-    
     # Показываем количество товаров в корзине
     if user_id is not None:
         try:
@@ -26,10 +23,16 @@ def main_menu_kb(user_id: int = None) -> ReplyKeyboardMarkup:
     else:
         button_text = "🛒 Корзина"
     
-    builder.button(text=button_text)
-    builder.button(text="⭐ Отзывы")
-    builder.adjust(2, 1)
-    return builder.as_markup(resize_keyboard=True)
+    # Создаем клавиатуру вручную для правильной раскладки
+    keyboard = [
+        [KeyboardButton(text="🍰 Каталог"), KeyboardButton(text=button_text)],
+        [KeyboardButton(text="⭐ Отзывы")]
+    ]
+    
+    return ReplyKeyboardMarkup(
+        keyboard=keyboard,
+        resize_keyboard=True
+    )
 
 
 def catalog_kb() -> InlineKeyboardMarkup:
@@ -95,3 +98,4 @@ def payment_confirm_kb() -> InlineKeyboardMarkup:
     builder.button(text="❌ Отменить", callback_data="payment:cancel")
     builder.adjust(1)
     return builder.as_markup()
+    
