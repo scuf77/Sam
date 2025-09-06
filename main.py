@@ -415,7 +415,7 @@ https://t.me/+zdtovQ9SvMxjZTUy
 
 🙏 Спасибо за ваш заказ!"""
     
-    await callback.message.answer(review_text)
+    await callback.message.answer(review_text, disable_web_page_preview=True)
     await callback.answer()
     
     logger.info(f"Заказ пользователя {user_id} с подтверждением платежа")
@@ -452,7 +452,7 @@ https://t.me/+zdtovQ9SvMxjZTUy
 
 🙏 Спасибо за то, что выбираете нас!"""
     
-    await message.answer(text)
+    await message.answer(text, disable_web_page_preview=True)
 
 
 async def restart_bot(message: Message, state: FSMContext):
