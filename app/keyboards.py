@@ -26,7 +26,7 @@ def main_menu_kb(user_id: int = None) -> ReplyKeyboardMarkup:
     # Создаем клавиатуру вручную для правильной раскладки
     keyboard = [
         [KeyboardButton(text="🍰 Каталог"), KeyboardButton(text=button_text)],
-        [KeyboardButton(text="⭐ Отзывы")]
+        [KeyboardButton(text="⭐ Отзывы"), KeyboardButton(text="🔄 Перезапуск")]
     ]
     
     return ReplyKeyboardMarkup(
