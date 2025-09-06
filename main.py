@@ -55,9 +55,9 @@ async def cmd_start(message: Message, state: FSMContext):
     logger.info(f"Команда /start от пользователя {message.from_user.id}")
     await state.clear()
     
-    # Отправляем приветственный стикер (можно заменить на ID вашего стикера)
+    # Отправляем приветственный стикер
     try:
-        await message.answer_sticker("CAACAgIAAxkBAAIBY2Y...")  # Замените на реальный ID стикера
+        await message.answer_sticker("CAACAgIAAxkBAAEPUWpou_GAnCdMdk0HEhGmGzuw1PBipgACBQADwDZPE_lqX5qCa011NgQ")
     except:
         pass  # Если стикер не найден, продолжаем без него
     
@@ -402,6 +402,12 @@ async def process_payment_confirmation(callback: CallbackQuery, state: FSMContex
         except Exception as e:
             logger.error(f"Ошибка при отправке заказа: {e}")
     
+    # Отправляем стикер после совершения заказа
+    try:
+        await callback.message.answer_sticker("CAACAgIAAxkBAAEPUYFou_Uj0WALs-0vu4gNXhODA5bzUgACfhsAAhpGKUicOQzK4RzSpTYE")
+    except:
+        pass
+    
     # Очищаем корзину и состояние
     CARTS.pop(user_id, None)
     await state.clear()
@@ -409,16 +415,28 @@ async def process_payment_confirmation(callback: CallbackQuery, state: FSMContex
     # Отправляем подтверждение пользователю
     await callback.message.edit_text(success_text)
     
+    # Отправляем стикер после оплаты
+    try:
+        await callback.message.answer_sticker("CAACAgIAAxkBAAEPUX1ou_UPzrbLgxAAAc6qcrkC74GQj70AAgEdAAJdjShIYFtNtyx1ELs2BA")
+    except:
+        pass
+    
+    # Отправляем стикер перед просьбой оставить отзыв
+    try:
+        await callback.message.answer_sticker("CAACAgIAAxkBAAEPUX9ou_UTPp9nphYgc2Ill27dN1siWwAChxsAAltBIUgymQuSvPFAIjYE")
+    except:
+        pass
+    
     # Отправляем сообщение с просьбой оставить отзыв
     review_text = """⭐ <b>Пожалуйста, оставьте отзыв о нашем заказе!</b>
 
 Ваше мнение <i>очень важно</i> для нас и поможет другим клиентам сделать <i>правильный выбор</i>.
 
 📝 <b>Оставить отзыв можно здесь:</b>
-<code>https://t.me/qwert1moment/2</code>
+https://t.me/qwert1moment/2
 
 💬 <b>Есть вопросы?</b> Общайтесь с другими клиентами:
-<code>https://t.me/+zdtovQ9SvMxjZTUy</code>
+https://t.me/+zdtovQ9SvMxjZTUy
 
 🙏 <i>Спасибо за ваш заказ!</i>"""
     
@@ -452,10 +470,10 @@ async def show_reviews(message: Message):
 
 👇 <b>Нажмите на ссылку ниже, чтобы перейти к отзывам:</b>
 
-<code>https://t.me/qwert1moment/2</code>
+https://t.me/qwert1moment/2
 
 💬 <b>Есть вопросы?</b> Общайтесь с другими клиентами в нашем <code>чате</code>:
-<code>https://t.me/+zdtovQ9SvMxjZTUy</code>
+https://t.me/+zdtovQ9SvMxjZTUy
 
 🙏 <i>Спасибо за то, что выбираете нас!</i>"""
     
