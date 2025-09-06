@@ -27,7 +27,8 @@ def main_menu_kb(user_id: int = None) -> ReplyKeyboardMarkup:
         button_text = "🛒 Корзина"
     
     builder.button(text=button_text)
-    builder.adjust(2)
+    builder.button(text="⭐ Отзывы")
+    builder.adjust(2, 1)
     return builder.as_markup(resize_keyboard=True)
 
 
