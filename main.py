@@ -5,7 +5,7 @@ from typing import Dict, DefaultDict
 from collections import defaultdict
 
 from aiogram import Bot, Dispatcher, F
-from aiogram.filters import CommandStart
+from aiogram.filters import CommandStart, Command
 from aiogram.types import Message, CallbackQuery, Sticker
 from aiogram.fsm.context import FSMContext
 from aiogram.client.default import DefaultBotProperties
@@ -74,6 +74,9 @@ async def cmd_start(message: Message, state: FSMContext):
         "• Оформить заказ с <code>доставкой</code>\n"
         "• Оплатить <code>удобным</code> способом\n"
         "• Оставить <code>отзыв</code> о заказе\n\n"
+        "⚡ <b>Быстрые команды:</b>\n"
+        "• <code>/basket</code> - открыть корзину\n"
+        "• <code>/feedback</code> - оставить отзыв\n\n"
         "👇 <b>Нажмите кнопку ниже, чтобы начать!</b>"
     )
     await message.answer(text, reply_markup=main_menu_kb(message.from_user.id))
@@ -287,6 +290,9 @@ async def back_handler(callback: CallbackQuery):
             "🍰 <b>Каталог</b> - посмотреть наши торты\n"
             "🛒 <b>Корзина</b> - оформить заказ\n"
             "⭐ <b>Отзывы</b> - оставить отзыв или почитать отзывы\n\n"
+            "⚡ <b>Быстрые команды:</b>\n"
+            "• <code>/basket</code> - открыть корзину\n"
+            "• <code>/feedback</code> - оставить отзыв\n\n"
             "💡 Выберите действие с помощью кнопок ниже!"
         )
         # Удаляем старое сообщение
@@ -479,6 +485,16 @@ https://t.me/+zdtovQ9SvMxjZTUy
     await message.answer(text, disable_web_page_preview=True)
 
 
+async def cmd_basket(message: Message):
+    """Команда /basket - открывает корзину"""
+    await open_cart(message)
+
+
+async def cmd_feedback(message: Message):
+    """Команда /feedback - показывает информацию об отзывах"""
+    await show_reviews(message)
+
+
 async def main():
     logger.info("Запуск кулинарного бота...")
     
@@ -496,6 +512,8 @@ async def main():
 
     # Команды
     dp.message.register(cmd_start, CommandStart())
+    dp.message.register(cmd_basket, Command("basket"))
+    dp.message.register(cmd_feedback, Command("feedback"))
 
     # Главное меню
     dp.message.register(show_catalog, F.text == "🍰 Каталог")
