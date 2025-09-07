@@ -114,6 +114,14 @@ def generate_time_slots_for_date(target_date_iso: str, now_dt: datetime) -> List
     return slots
 
 
+def format_date_ru(date_iso: str) -> str:
+    try:
+        y, m, d = [int(x) for x in date_iso.split("-")]
+        return f"{d:02d}.{m:02d}.{y}"
+    except Exception:
+        return date_iso
+
+
 async def cmd_start(message: Message, state: FSMContext):
     logger.info(f"Команда /start от пользователя {message.from_user.id}")
     await state.clear()
@@ -319,7 +327,7 @@ async def choose_date(callback: CallbackQuery, state: FSMContext):
         await callback.answer()
         return
     await callback.message.edit_text(
-        f"Дата: {date_str}. Выберите время:",
+        f"Дата: {format_date_ru(date_str)}. Выберите время:",
         reply_markup=time_slots_kb(date_str, slots)
     )
     await callback.answer()
@@ -389,7 +397,7 @@ async def finish_checkout(message: Message, state: FSMContext):
     user_order_lines.append(f"• Ваше имя: {data.get('full_name')}")
     user_order_lines.append(f"• Телефон: {data.get('phone')}")
     user_order_lines.append(f"• Способ: {data.get('delivery_method')}")
-    user_order_lines.append(f"• Дата: {data.get('delivery_date')}")
+    user_order_lines.append(f"• Дата: {format_date_ru(data.get('delivery_date'))}")
     user_order_lines.append(f"• Время: {data.get('delivery_time')}")
     user_order_lines.append(f"• Адрес: {data.get('address', 'самовывоз')}")
     user_order_lines.append(f"• Комментарий: {comment}")
@@ -550,12 +558,6 @@ async def process_payment_confirmation(callback: CallbackQuery, state: FSMContex
         except Exception as e:
             logger.error(f"Ошибка при отправке заказа: {e}")
     
-    # Отправляем стикер после совершения заказа
-    try:
-        await callback.message.answer_sticker("CAACAgIAAxkBAAEPUYFou_Uj0WALs-0vu4gNXhODA5bzUgACfhsAAhpGKUicOQzK4RzSpTYE")
-    except:
-        pass
-    
     # Очищаем корзину и состояние
     CARTS.pop(user_id, None)
     await state.clear()
@@ -566,12 +568,6 @@ async def process_payment_confirmation(callback: CallbackQuery, state: FSMContex
     # Отправляем стикер после оплаты
     try:
         await callback.message.answer_sticker("CAACAgIAAxkBAAEPUX1ou_UPzrbLgxAAAc6qcrkC74GQj70AAgEdAAJdjShIYFtNtyx1ELs2BA")
-    except:
-        pass
-    
-    # Отправляем стикер перед просьбой оставить отзыв
-    try:
-        await callback.message.answer_sticker("CAACAgIAAxkBAAEPUX9ou_UTPp9nphYgc2Ill27dN1siWwAChxsAAltBIUgymQuSvPFAIjYE")
     except:
         pass
     
