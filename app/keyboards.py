@@ -99,3 +99,31 @@ def payment_confirm_kb() -> InlineKeyboardMarkup:
     builder.adjust(1)
     return builder.as_markup()
     
+
+# ===================== ДОБАВЛЕНО: ПРЕДЗАКАЗ =====================
+
+def delivery_method_kb() -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text="🚶 Самовывоз", callback_data="delivery:pickup")
+    builder.button(text="🚚 Доставка", callback_data="delivery:delivery")
+    builder.button(text="⬅️ К корзине", callback_data="back:cart")
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def dates_kb(date_items: list[str]) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    for d in date_items:
+        builder.button(text=d, callback_data=f"date:{d}")
+    builder.button(text="⬅️ Назад", callback_data="back:delivery")
+    builder.adjust(1)
+    return builder.as_markup()
+
+
+def time_slots_kb(date_str: str, slot_items: list[str]) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    for t in slot_items:
+        builder.button(text=t, callback_data=f"time:{t}|{date_str}")
+    builder.button(text="⬅️ Назад", callback_data="back:dates")
+    builder.adjust(2)
+    return builder.as_markup()
