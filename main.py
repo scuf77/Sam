@@ -1,8 +1,9 @@
 import asyncio
 import logging
 import time
-from typing import Dict, DefaultDict
+from typing import Dict, DefaultDict, List
 from collections import defaultdict
+from datetime import datetime, timedelta, date, time as dt_time
 
 from aiogram import Bot, Dispatcher, F
 from aiogram.filters import CommandStart, Command
@@ -15,9 +16,15 @@ from app.config import BOT_TOKEN, MANAGER_CHAT_ID, CARD_NUMBER
 from app.catalog import CATALOG, get_cake_by_id
 from app.keyboards import (
     main_menu_kb, catalog_kb, cake_card_kb, cart_kb,
-    order_confirmation_kb, payment_confirm_kb
+    order_confirmation_kb, payment_confirm_kb,
+    delivery_method_kb, dates_kb, time_slots_kb
 )
 from app.states import CheckoutState, PaymentState
+from app.config import (
+    BAKER_SCHEDULE_START_DATE, WORK_CYCLE_ON_DAYS, WORK_CYCLE_OFF_DAYS,
+    WORKING_HOURS_START, WORKING_HOURS_END, SLOT_MINUTES,
+    MIN_LEAD_HOURS, MAX_DAYS_AHEAD
+)
 
 # Настройка логирования
 logging.basicConfig(
@@ -49,6 +56,62 @@ def cart_text(user_id: int) -> str:
             lines.append(f"• {cake.name} × {qty} = {cake.price * qty}₽")
     lines.append(f"Итого: {cart_total(user_id)}₽")
     return "\n".join(lines)
+
+
+# ==================== ВСПОМОГАТЕЛЬНОЕ: РАСПИСАНИЕ И СЛОТЫ ====================
+
+def _parse_schedule_start() -> date:
+    try:
+        y, m, d = [int(x) for x in BAKER_SCHEDULE_START_DATE.split("-")]
+        return date(y, m, d)
+    except Exception:
+        return date.today()
+
+
+def is_working_day(day: date) -> bool:
+    base = _parse_schedule_start()
+    cycle = WORK_CYCLE_ON_DAYS + WORK_CYCLE_OFF_DAYS
+    if cycle <= 0:
+        return True
+    delta = (day - base).days
+    mod = delta % cycle
+    return 0 <= mod < WORK_CYCLE_ON_DAYS
+
+
+def generate_available_dates(now_dt: datetime) -> List[str]:
+    dates: List[str] = []
+    for i in range(MAX_DAYS_AHEAD + 1):
+        d = (now_dt.date() + timedelta(days=i))
+        if not is_working_day(d):
+            continue
+        # Проверка минимального времени: если день текущий, должен быть хотя бы MIN_LEAD_HOURS
+        if i == 0:
+            if now_dt + timedelta(hours=MIN_LEAD_HOURS) < datetime.combine(d, dt_time(hour=WORKING_HOURS_END)):
+                dates.append(d.isoformat())
+        else:
+            dates.append(d.isoformat())
+    return dates
+
+
+def generate_time_slots_for_date(target_date_iso: str, now_dt: datetime) -> List[str]:
+    try:
+        y, m, d = [int(x) for x in target_date_iso.split("-")]
+        target_date = date(y, m, d)
+    except Exception:
+        return []
+    if not is_working_day(target_date):
+        return []
+    slots: List[str] = []
+    start_dt = datetime.combine(target_date, dt_time(hour=WORKING_HOURS_START))
+    end_dt = datetime.combine(target_date, dt_time(hour=WORKING_HOURS_END))
+    step = timedelta(minutes=SLOT_MINUTES)
+    cursor = start_dt
+    min_dt = now_dt + timedelta(hours=MIN_LEAD_HOURS)
+    while cursor + step <= end_dt:
+        if cursor >= min_dt:
+            slots.append(cursor.strftime("%H:%M"))
+        cursor += step
+    return slots
 
 
 async def cmd_start(message: Message, state: FSMContext):
@@ -216,8 +279,59 @@ async def start_checkout(callback: CallbackQuery, state: FSMContext):
     if not CARTS[callback.from_user.id]:
         await callback.answer("Корзина пуста", show_alert=True)
         return
+    await state.set_state(CheckoutState.delivery_method)
+    await callback.message.answer(
+        "Выберите способ получения заказа:",
+        reply_markup=delivery_method_kb()
+    )
+    await callback.answer()
+
+
+async def choose_delivery_method(callback: CallbackQuery, state: FSMContext):
+    method = callback.data.split(":", 1)[1]  # pickup | delivery
+    await state.update_data(delivery_method=method)
+    # Далее — выбор даты
+    await state.set_state(CheckoutState.delivery_date)
+    now_dt = datetime.now()
+    dates = generate_available_dates(now_dt)
+    if not dates:
+        await callback.message.edit_text(
+            "К сожалению, ближайшие слоты недоступны. Попробуйте позже.")
+        await callback.answer()
+        return
+    await callback.message.edit_text(
+        "Выберите дату получения заказа:", reply_markup=dates_kb(dates)
+    )
+    await callback.answer()
+
+
+async def choose_date(callback: CallbackQuery, state: FSMContext):
+    date_str = callback.data.split(":", 1)[1]
+    await state.update_data(delivery_date=date_str)
+    await state.set_state(CheckoutState.delivery_time)
+    now_dt = datetime.now()
+    slots = generate_time_slots_for_date(date_str, now_dt)
+    if not slots:
+        await callback.message.edit_text(
+            "В выбранную дату нет доступных слотов. Выберите другую дату:",
+            reply_markup=dates_kb(generate_available_dates(now_dt))
+        )
+        await callback.answer()
+        return
+    await callback.message.edit_text(
+        f"Дата: {date_str}. Выберите время:",
+        reply_markup=time_slots_kb(date_str, slots)
+    )
+    await callback.answer()
+
+
+async def choose_time(callback: CallbackQuery, state: FSMContext):
+    payload = callback.data.split(":", 1)[1]
+    time_str, date_str = payload.split("|")
+    await state.update_data(delivery_time=time_str, delivery_date=date_str)
+    # Далее — ФИО
     await state.set_state(CheckoutState.full_name)
-    await callback.message.answer("Введите ваше Имя:")
+    await callback.message.edit_text("Введите ваше Имя:")
     await callback.answer()
 
 
@@ -229,8 +343,14 @@ async def ask_phone(message: Message, state: FSMContext):
 
 async def ask_address(message: Message, state: FSMContext):
     await state.update_data(phone=message.text)
-    await state.set_state(CheckoutState.address)
-    await message.answer("Введите адрес доставки:")
+    data = await state.get_data()
+    if data.get("delivery_method") == "delivery":
+        await state.set_state(CheckoutState.address)
+        await message.answer("Введите адрес доставки:")
+    else:
+        # Самовывоз — адрес не спрашиваем
+        await state.set_state(CheckoutState.comment)
+        await message.answer("Комментарий к заказу (или '-' если без комментария):")
 
 
 async def ask_comment(message: Message, state: FSMContext):
@@ -268,7 +388,10 @@ async def finish_checkout(message: Message, state: FSMContext):
     user_order_lines.append("👤 Данные:")
     user_order_lines.append(f"• Ваше имя: {data.get('full_name')}")
     user_order_lines.append(f"• Телефон: {data.get('phone')}")
-    user_order_lines.append(f"• Адрес: {data.get('address')}")
+    user_order_lines.append(f"• Способ: {data.get('delivery_method')}")
+    user_order_lines.append(f"• Дата: {data.get('delivery_date')}")
+    user_order_lines.append(f"• Время: {data.get('delivery_time')}")
+    user_order_lines.append(f"• Адрес: {data.get('address', 'самовывоз')}")
     user_order_lines.append(f"• Комментарий: {comment}")
     user_order_lines.append("")
     user_order_lines.append("⏰ Время заказа: " + message.date.strftime("%d.%m.%Y %H:%M:%S"))
@@ -308,6 +431,15 @@ async def back_handler(callback: CallbackQuery):
         await show_catalog(callback)
     elif action == "cart":
         await open_cart(callback)
+    elif action == "delivery":
+        await callback.message.edit_text(
+            "Выберите способ получения заказа:", reply_markup=delivery_method_kb()
+        )
+    elif action == "dates":
+        now_dt = datetime.now()
+        await callback.message.edit_text(
+            "Выберите дату получения заказа:", reply_markup=dates_kb(generate_available_dates(now_dt))
+        )
     await callback.answer()
 
 
@@ -338,7 +470,10 @@ async def start_payment(callback: CallbackQuery, state: FSMContext):
 👤 Данные заказа:
 • Имя: {order_data.get('full_name')}
 • Телефон: {order_data.get('phone')}
-• Адрес: {order_data.get('address')}
+• Способ: {order_data.get('delivery_method')}
+• Дата: {order_data.get('delivery_date')}
+• Время: {order_data.get('delivery_time')}
+• Адрес: {order_data.get('address', 'самовывоз')}
 • Комментарий: {order_data.get('comment', 'без комментария')}
 
 ⚠️ После перевода денег нажмите кнопку "Платёж выполнен" ниже."""
@@ -367,7 +502,10 @@ async def process_payment_confirmation(callback: CallbackQuery, state: FSMContex
 👤 Данные:
 • Имя: {order_data.get('full_name')}
 • Телефон: {order_data.get('phone')}
-• Адрес: {order_data.get('address')}
+• Способ: {order_data.get('delivery_method')}
+• Дата: {order_data.get('delivery_date')}
+• Время: {order_data.get('delivery_time')}
+• Адрес: {order_data.get('address', 'самовывоз')}
 • Комментарий: {order_data.get('comment', 'без комментария')}
 
 ⏰ Время заказа: {callback.message.date.strftime("%d.%m.%Y %H:%M:%S")}
@@ -388,7 +526,10 @@ async def process_payment_confirmation(callback: CallbackQuery, state: FSMContex
 👤 Данные клиента:
 • Имя: {order_data.get('full_name')}
 • Телефон: {order_data.get('phone')}
-• Адрес: {order_data.get('address')}
+• Способ: {order_data.get('delivery_method')}
+• Дата: {order_data.get('delivery_date')}
+• Время: {order_data.get('delivery_time')}
+• Адрес: {order_data.get('address', 'самовывоз')}
 • Комментарий: {order_data.get('comment', 'без комментария')}
 
 👨‍💻 Информация о пользователе:
@@ -532,6 +673,9 @@ async def main():
 
     # Оформление
     dp.callback_query.register(start_checkout, F.data == "cart:checkout")
+    dp.callback_query.register(choose_delivery_method, F.data.startswith("delivery:"))
+    dp.callback_query.register(choose_date, F.data.startswith("date:"))
+    dp.callback_query.register(choose_time, F.data.startswith("time:"))
     dp.message.register(ask_phone, CheckoutState.full_name)
     dp.message.register(ask_address, CheckoutState.phone)
     dp.message.register(ask_comment, CheckoutState.address)
