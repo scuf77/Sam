@@ -156,14 +156,23 @@ async def cmd_start(message: Message, state: FSMContext):
 👇 Выберите вариант ниже и начнём:
 """
 
+    # Отправляем с обязательным эффектом салюта (fireworks)
     try:
         await message.answer(
             text,
             reply_markup=main_menu_kb(message.from_user.id),
-            message_effect_id=WELCOME_EFFECT_ID  # 🎉 эффект из конфига
+            message_effect_id="5046509860389126442"
         )
     except:
-        await message.answer(text, reply_markup=main_menu_kb(message.from_user.id))
+        # Падение эффекта — пробуем с эффектом из конфига (на случай отличий клиента)
+        try:
+            await message.answer(
+                text,
+                reply_markup=main_menu_kb(message.from_user.id),
+                message_effect_id=WELCOME_EFFECT_ID
+            )
+        except:
+            await message.answer(text, reply_markup=main_menu_kb(message.from_user.id))
 
 
 
@@ -203,8 +212,8 @@ async def open_cake_card(callback: CallbackQuery):
     # Формируем подпись к фото с полной информацией
     photo_caption = (
         f"🍰 <b>{cake.name}</b>\n\n"
-        f"📝 {cake.description}\n\n"
-        f"💰 <b>Цена: {cake.price}₽</b>\n\n"
+        f"<blockquote>📝 {cake.description}\n\n"
+        f"💰 Цена: {cake.price}₽</blockquote>\n\n"
         f"✨ Добавьте в корзину и оформите заказ!"
     )
     
