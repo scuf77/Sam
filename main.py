@@ -135,28 +135,35 @@ async def cmd_start(message: Message, state: FSMContext):
     
     # Отправляем приветственный стикер
     try:
-        await message.answer_sticker("CAACAgIAAxkBAAEPUWpou_GAnCdMdk0HEhGmGzuw1PBipgACBQADwDZPE_lqX5qCa011NgQ")
+        await message.answer_sticker(
+            "CAACAgIAAxkBAAEPUWpou_GAnCdMdk0HEhGmGzuw1PBipgACBQADwDZPE_lqX5qCa011NgQ"
+        )
     except:
-        pass  # Если стикер не найден, продолжаем без него
-    
-    # Сокращённое приветствие + цитата с примерами тортов
-    cake_lines = [f"{c.name} — {c.price}₽" for c in CATALOG[:3]]
-    quote_block = "> " + "\n> ".join(cake_lines)
-    text = (
-        "🎂 <b>Добро пожаловать!</b>\n\n"
-        "Выбирайте торт и оформляйте заказ в пару нажатий.\n\n"
-        "<i>Популярные позиции:</i>\n"
-        f"{quote_block}\n\n"
-        "👇 Откройте каталог на клавиатуре ниже"
-    )
-    # Добавляем эффект сообщения, если задан
-    if WELCOME_EFFECT_ID:
-        try:
-            await message.answer(text, reply_markup=main_menu_kb(message.from_user.id), message_effect_id=WELCOME_EFFECT_ID)
-            return
-        except Exception:
-            pass
-    await message.answer(text, reply_markup=main_menu_kb(message.from_user.id))
+        pass
+
+    # Приветственный текст с цитатой и эффектом
+    text = f"""
+Привет, <b>{message.from_user.first_name}</b>! 👋 Рады видеть тебя в нашем боте 🥳
+
+<blockquote>🕒 График работы:
+• Пн – Вс: Круглосуточно</blockquote>
+
+🛒 Сумма заказа от 500 ₽  
+🚚 Доставка — 200 ₽ (бесплатно от 2500 ₽)
+
+📚 Помощь: Если возникли вопросы, напиши <b>"Помощь"</b>, и я буду рад помочь!  
+
+👇 Выберите вариант ниже и начнём:
+"""
+
+    try:
+        await message.answer(
+            text,
+            reply_markup=main_menu_kb(message.from_user.id),
+            message_effect_id=WELCOME_EFFECT_ID  # 🎉 эффект из конфига
+        )
+    except:
+        await message.answer(text, reply_markup=main_menu_kb(message.from_user.id))
 
 
 
