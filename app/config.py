@@ -38,6 +38,10 @@ MIN_LEAD_HOURS = int(os.getenv("MIN_LEAD_HOURS", "24"))
 # Максимум дней вперёд, доступных для предзаказа
 MAX_DAYS_AHEAD = int(os.getenv("MAX_DAYS_AHEAD", "14"))
 
+# Эффект приветственного сообщения (Telegram message_effect_id)
+# Пример: конфетти. Если пусто, эффект не применяется.
+WELCOME_EFFECT_ID = os.getenv("WELCOME_EFFECT_ID", "")
+
 if not BOT_TOKEN:
     raise RuntimeError("Не задан токен бота. Укажите BOT_TOKEN в .env или переменных окружения.")
 
@@ -53,3 +57,4 @@ print(f"  • База цикла: {BAKER_SCHEDULE_START_DATE}")
 print(f"  • Цикл: {WORK_CYCLE_ON_DAYS} на / {WORK_CYCLE_OFF_DAYS} от")
 print(f"  • Часы: {WORKING_HOURS_START}:00–{WORKING_HOURS_END}:00, слот {SLOT_MINUTES} мин")
 print(f"  • Минимальный срок: {MIN_LEAD_HOURS} ч, горизонт: {MAX_DAYS_AHEAD} дней")
+print(f"- Эффект приветствия: {'ЗАДАН' if WELCOME_EFFECT_ID else 'не задан'}")
