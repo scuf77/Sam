@@ -37,6 +37,9 @@ logger = logging.getLogger(__name__)
 # Память корзин пользователей: user_id -> {cake_id: qty}
 CARTS: DefaultDict[int, Dict[str, int]] = defaultdict(dict)
 
+# Хранилище ID приветственных сообщений для каждого пользователя
+WELCOME_MESSAGES: Dict[int, int] = {}
+
 
 def cart_total(user_id: int) -> int:
     total = 0
@@ -141,7 +144,7 @@ async def cmd_start(message: Message, state: FSMContext):
     except:
         pass
 
-    # Приветственный текст с цитатой и эффектом
+    # Приветственный текст с цитатой
     text = f"""
 Привет, <b>{message.from_user.first_name}</b>! 👋 Рады видеть тебя в нашем боте 🥳
 
@@ -156,46 +159,63 @@ async def cmd_start(message: Message, state: FSMContext):
 👇 Выберите вариант ниже и начнём:
 """
 
-    # Отправляем сообщение с эффектом салюта
-    welcome_message = await message.answer(
-        text,
-        reply_markup=main_menu_kb(message.from_user.id),
+    # Сначала отправляем сообщение с эффектом
+    welcome_msg = await message.answer(
+        "🎉 Добро пожаловать! 🎉",
         message_effect_id=WELCOME_EFFECT_ID
     )
     
-    # Обновляем сообщение, чтобы активировать эффект автоматически
-    try:
-        await asyncio.sleep(0.5)  # Небольшая задержка для надежности
-        await welcome_message.edit_text(
-            text,
-            reply_markup=main_menu_kb(message.from_user.id)
-        )
-        logger.info(f"Эффект сообщения активирован для пользователя {message.from_user.id}")
-    except Exception as e:
-        logger.error(f"Ошибка при активации эффекта сообщения: {e}")
+    # Ждем немного для активации эффекта
+    await asyncio.sleep(1)
+    
+    # Затем отправляем основное сообщение с меню
+    main_msg = await message.answer(
+        text,
+        reply_markup=main_menu_kb(message.from_user.id)
+    )
+    
+    # Сохраняем ID приветственного сообщения для последующего удаления
+    WELCOME_MESSAGES[message.from_user.id] = main_msg.message_id
 
 
 async def show_catalog(message: Message | CallbackQuery):
+    # Удаляем приветственное сообщение если оно есть
+    if isinstance(message, Message):
+        user_id = message.from_user.id
+        if user_id in WELCOME_MESSAGES:
+            try:
+                await message.bot.delete_message(user_id, WELCOME_MESSAGES[user_id])
+                del WELCOME_MESSAGES[user_id]
+            except:
+                pass
+        # Также пытаемся удалить исходное сообщение если это команда
+        try:
+            await message.delete()
+        except:
+            pass
+    else:
+        user_id = message.from_user.id
+        if user_id in WELCOME_MESSAGES:
+            try:
+                await message.bot.delete_message(user_id, WELCOME_MESSAGES[user_id])
+                del WELCOME_MESSAGES[user_id]
+            except:
+                pass
+        if message.message:
+            try:
+                await message.message.delete()
+            except:
+                pass
+
     text = (
         "🍰 <b>Наш каталог тортов</b>\n\n"
         "✨ Выберите понравившийся торт и нажмите на него, чтобы увидеть фото и подробности!\n\n"
         "💡 Все торты готовятся из свежих ингредиентов по домашним рецептам."
     )
+    
     if isinstance(message, Message):
-        # Удаляем предыдущее сообщение (главное меню) при переходе в каталог
-        try:
-            await message.delete()
-        except:
-            pass
-        # Отправляем новое сообщение с каталогом
         await message.answer(text, reply_markup=catalog_kb())
     else:
-        # Удаляем предыдущее сообщение при переходе в каталог
-        try:
-            await message.message.delete()
-        except:
-            pass
-        # Отправляем новое сообщение с каталогом
         await message.message.answer(text, reply_markup=catalog_kb())
 
 
@@ -205,6 +225,15 @@ async def open_cake_card(callback: CallbackQuery):
     if not cake:
         await callback.answer("Товар не найден", show_alert=True)
         return
+    
+    # Удаляем приветственное сообщение если оно есть
+    user_id = callback.from_user.id
+    if user_id in WELCOME_MESSAGES:
+        try:
+            await callback.bot.delete_message(user_id, WELCOME_MESSAGES[user_id])
+            del WELCOME_MESSAGES[user_id]
+        except:
+            pass
     
     # Формируем подпись к фото с полной информацией
     photo_caption = (
@@ -274,8 +303,21 @@ async def add_to_cart(callback: CallbackQuery):
 
 async def open_cart(event: Message | CallbackQuery):
     user_id = event.from_user.id if isinstance(event, Message) else event.from_user.id
+    
+    # Удаляем приветственное сообщение если оно есть
+    if user_id in WELCOME_MESSAGES:
+        try:
+            if isinstance(event, Message):
+                await event.bot.delete_message(user_id, WELCOME_MESSAGES[user_id])
+            else:
+                await event.bot.delete_message(user_id, WELCOME_MESSAGES[user_id])
+            del WELCOME_MESSAGES[user_id]
+        except:
+            pass
+    
     text = cart_text(user_id)
     has_items = bool(CARTS[user_id])
+    
     if isinstance(event, Message):
         # Удаляем предыдущее сообщение (главное меню) при открытии корзины
         try:
@@ -452,7 +494,11 @@ async def back_handler(callback: CallbackQuery):
         except:
             pass
         # Отправляем новое сообщение с главным меню
-        await callback.message.answer(text, reply_markup=main_menu_kb(callback.from_user.id))
+        main_msg = await callback.message.answer(text, reply_markup=main_menu_kb(callback.from_user.id))
+        
+        # Сохраняем ID сообщения главного меню
+        WELCOME_MESSAGES[callback.from_user.id] = main_msg.message_id
+        
     elif action == "catalog":
         await show_catalog(callback)
     elif action == "cart":
@@ -623,6 +669,15 @@ async def back_to_cart(callback: CallbackQuery, state: FSMContext):
 
 async def show_reviews(message: Message):
     """Показывает информацию об отзывах"""
+    # Удаляем приветственное сообщение если оно есть
+    user_id = message.from_user.id
+    if user_id in WELCOME_MESSAGES:
+        try:
+            await message.bot.delete_message(user_id, WELCOME_MESSAGES[user_id])
+            del WELCOME_MESSAGES[user_id]
+        except:
+            pass
+    
     text = """⭐ <b>Отзывы наших клиентов</b>
 
 Мы очень ценим мнение каждого клиента! Здесь вы можете:
