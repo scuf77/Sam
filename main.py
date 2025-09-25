@@ -594,7 +594,11 @@ https://t.me/+zdtovQ9SvMxjZTUy
 
 🙏 Спасибо за ваш заказ!"""
     
-    await callback.message.answer(review_text, disable_web_page_preview=True)
+    await callback.message.answer(
+        review_text, 
+        disable_web_page_preview=True,
+        message_effect_id="5159385139981059251"
+    )
     await callback.answer()
     
     logger.info(f"Заказ пользователя {user_id} с подтверждением платежа")
