@@ -157,47 +157,11 @@ async def cmd_start(message: Message, state: FSMContext):
 """
 
     # Отправляем с эффектом салюта
-    try:
-        await message.answer(
-            text,
-            reply_markup=main_menu_kb(message.from_user.id),
-            message_effect_id=WELCOME_EFFECT_ID
-        )
-    except Exception as e:
-        logger.error(f"Ошибка при отправке с эффектом: {e}")
-        # Если эффект не сработал, отправляем без эффекта
-        await message.answer(text, reply_markup=main_menu_kb(message.from_user.id))
-    
-    # Попробуем отправить дополнительное сообщение с эффектом для имитации нажатия
-    try:
-        await asyncio.sleep(0.5)  # Небольшая задержка
-        effect_message = await message.answer(
-            "🎆",
-            message_effect_id=WELCOME_EFFECT_ID
-        )
-        # Удаляем дополнительное сообщение через короткое время
-        await asyncio.sleep(1)
-        try:
-            await effect_message.delete()
-        except:
-            pass
-    except Exception as e:
-        logger.error(f"Ошибка при отправке дополнительного эффекта: {e}")
-    
-    # Попробуем еще один подход - отправить сообщение с эффектом и сразу удалить его
-    try:
-        await asyncio.sleep(0.2)
-        temp_message = await message.answer(
-            "✨",
-            message_effect_id=WELCOME_EFFECT_ID
-        )
-        await asyncio.sleep(0.5)
-        try:
-            await temp_message.delete()
-        except:
-            pass
-    except Exception as e:
-        logger.error(f"Ошибка при отправке временного эффекта: {e}")
+    await message.answer(
+        text,
+        reply_markup=main_menu_kb(message.from_user.id),
+        message_effect_id=WELCOME_EFFECT_ID
+    )
 
 
 
