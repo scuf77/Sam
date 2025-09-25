@@ -156,23 +156,17 @@ async def cmd_start(message: Message, state: FSMContext):
 👇 Выберите вариант ниже и начнём:
 """
 
-    # Отправляем с обязательным эффектом салюта (fireworks)
+    # Отправляем с эффектом салюта
     try:
         await message.answer(
             text,
             reply_markup=main_menu_kb(message.from_user.id),
-            message_effect_id="5046509860389126442"
+            message_effect_id=WELCOME_EFFECT_ID
         )
-    except:
-        # Падение эффекта — пробуем с эффектом из конфига (на случай отличий клиента)
-        try:
-            await message.answer(
-                text,
-                reply_markup=main_menu_kb(message.from_user.id),
-                message_effect_id=WELCOME_EFFECT_ID
-            )
-        except:
-            await message.answer(text, reply_markup=main_menu_kb(message.from_user.id))
+    except Exception as e:
+        logger.error(f"Ошибка при отправке с эффектом: {e}")
+        # Если эффект не сработал, отправляем без эффекта
+        await message.answer(text, reply_markup=main_menu_kb(message.from_user.id))
 
 
 
