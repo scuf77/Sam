@@ -40,7 +40,7 @@ MAX_DAYS_AHEAD = int(os.getenv("MAX_DAYS_AHEAD", "14"))
 
 # Эффект приветственного сообщения (Telegram message_effect_id)
 # ID эффекта салюта (fireworks) для приветственного сообщения
-WELCOME_EFFECT_ID = os.getenv("WELCOME_EFFECT_ID", "5046509860389126442")
+WELCOME_EFFECT_ID = os.getenv("WELCOME_EFFECT_ID", "5159385139981059251")
 
 if not BOT_TOKEN:
     raise RuntimeError("Не задан токен бота. Укажите BOT_TOKEN в .env или переменных окружения.")
