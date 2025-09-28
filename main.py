@@ -118,7 +118,7 @@ def generate_time_slots_for_date(target_date_iso: str, now_dt: datetime) -> List
 def format_date_ru(date_iso: str) -> str:
     try:
         y, m, d = [int(x) for x in date_iso.split("-")]
-        return f"{d:02d}-{m:02d}-{y}"
+        return f"{d:02d}.{m:02d}.{y}"
     except Exception:
         return date_iso
 
@@ -555,7 +555,7 @@ async def process_payment_confirmation(callback: CallbackQuery, state: FSMContex
 • Имя: {order_data.get('full_name')}
 • Телефон: {order_data.get('phone')}
 • Способ: {format_method_ru(order_data.get('delivery_method'))}
-• Дата: {order_data.get('delivery_date')}
+• Дата: {format_date_ru(order_data.get('delivery_date'))}
 • Время: {order_data.get('delivery_time')}
 {format_address_line(order_data)}
 • Комментарий: {order_data.get('comment', 'без комментария')}
