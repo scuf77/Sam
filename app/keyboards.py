@@ -105,8 +105,8 @@ def payment_confirm_kb() -> InlineKeyboardMarkup:
 
 def delivery_method_kb() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
-    builder.button(text="🚶 Самовывоз", callback_data="delivery:pickup")
-    builder.button(text="🚚 Доставка", callback_data="delivery:delivery")
+    builder.button(text="🚶 Самовывоз", callback_data="delivery:самовывоз")
+    builder.button(text="🚚 Доставка", callback_data="delivery:доставка")
     builder.button(text="⬅️ К корзине", callback_data="back:cart")
     builder.adjust(1)
     return builder.as_markup()
@@ -115,10 +115,10 @@ def delivery_method_kb() -> InlineKeyboardMarkup:
 def dates_kb(date_items: list[str]) -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     for d in date_items:
-        # d приходит в ISO (YYYY-MM-DD). Показываем в формате ДД.ММ.ГГГГ
+        # d приходит в ISO (YYYY-MM-DD). Показываем в формате ДД-ММ-ГГГГ
         try:
             y, m, day = [int(x) for x in d.split("-")]
-            label = f"{day:02d}.{m:02d}.{y}"
+            label = f"{day:02d}-{m:02d}-{y}"
         except Exception:
             label = d
         builder.button(text=label, callback_data=f"date:{d}")
