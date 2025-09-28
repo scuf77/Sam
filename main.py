@@ -129,6 +129,15 @@ def format_method_ru(method: str | None) -> str:
     return "самовывоз" if method == "самовывоз" else "доставка"
 
 
+def format_address_line(order_data: dict) -> str:
+    """Формирует строку с адресом только для доставки"""
+    method = order_data.get('delivery_method')
+    if method == "доставка":
+        address = order_data.get('address', 'не указан')
+        return f"• Адрес: {address}"
+    return ""
+
+
 async def cmd_start(message: Message, state: FSMContext):
     logger.info(f"Команда /start от пользователя {message.from_user.id}")
     await state.clear()
@@ -409,7 +418,9 @@ async def finish_checkout(message: Message, state: FSMContext):
     user_order_lines.append(f"• Способ: {format_method_ru(data.get('delivery_method'))}")
     user_order_lines.append(f"• Дата: {format_date_ru(data.get('delivery_date'))}")
     user_order_lines.append(f"• Время: {data.get('delivery_time')}")
-    user_order_lines.append(f"• Адрес: {data.get('address', 'самовывоз')}")
+    address_line = format_address_line(data)
+    if address_line:
+        user_order_lines.append(address_line)
     user_order_lines.append(f"• Комментарий: {comment}")
     user_order_lines.append("")
     user_order_lines.append("⏰ Время заказа: " + message.date.strftime("%d.%m.%Y %H:%M:%S"))
@@ -491,7 +502,7 @@ async def start_payment(callback: CallbackQuery, state: FSMContext):
 • Способ: {format_method_ru(order_data.get('delivery_method'))}
 • Дата: {format_date_ru(order_data.get('delivery_date'))}
 • Время: {order_data.get('delivery_time')}
-• Адрес: {order_data.get('address', 'самовывоз')}
+{format_address_line(order_data)}
 • Комментарий: {order_data.get('comment', 'без комментария')}
 
 ⚠️ После перевода денег нажмите кнопку "Платёж выполнен" ниже."""
@@ -523,7 +534,7 @@ async def process_payment_confirmation(callback: CallbackQuery, state: FSMContex
 • Способ: {format_method_ru(order_data.get('delivery_method'))}
 • Дата: {format_date_ru(order_data.get('delivery_date'))}
 • Время: {order_data.get('delivery_time')}
-• Адрес: {order_data.get('address', 'самовывоз')}
+{format_address_line(order_data)}
 • Комментарий: {order_data.get('comment', 'без комментария')}
 
 ⏰ Время заказа: {callback.message.date.strftime("%d.%m.%Y %H:%M:%S")}
@@ -543,10 +554,10 @@ async def process_payment_confirmation(callback: CallbackQuery, state: FSMContex
 👤 Данные клиента:
 • Имя: {order_data.get('full_name')}
 • Телефон: {order_data.get('phone')}
-• Способ: {order_data.get('delivery_method')}
+• Способ: {format_method_ru(order_data.get('delivery_method'))}
 • Дата: {order_data.get('delivery_date')}
 • Время: {order_data.get('delivery_time')}
-• Адрес: {order_data.get('address', 'самовывоз')}
+{format_address_line(order_data)}
 • Комментарий: {order_data.get('comment', 'без комментария')}
 
 👨‍💻 Информация о пользователе:
