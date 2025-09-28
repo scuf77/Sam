@@ -118,7 +118,7 @@ def generate_time_slots_for_date(target_date_iso: str, now_dt: datetime) -> List
 def format_date_ru(date_iso: str) -> str:
     try:
         y, m, d = [int(x) for x in date_iso.split("-")]
-        return f"{d:02d}.{m:02d}.{y}"
+        return f"{d:02d}-{m:02d}-{y}"
     except Exception:
         return date_iso
 
@@ -126,7 +126,7 @@ def format_date_ru(date_iso: str) -> str:
 def format_method_ru(method: str | None) -> str:
     if not method:
         return ""
-    return "самовывоз" if method == "pickup" else "доставка"
+    return "самовывоз" if method == "самовывоз" else "доставка"
 
 
 async def cmd_start(message: Message, state: FSMContext):
@@ -306,7 +306,7 @@ async def start_checkout(callback: CallbackQuery, state: FSMContext):
 
 
 async def choose_delivery_method(callback: CallbackQuery, state: FSMContext):
-    method = callback.data.split(":", 1)[1]  # pickup | delivery
+    method = callback.data.split(":", 1)[1]  # самовывоз | доставка
     await state.update_data(delivery_method=method)
     # Далее — выбор даты
     await state.set_state(CheckoutState.delivery_date)
@@ -362,7 +362,7 @@ async def ask_phone(message: Message, state: FSMContext):
 async def ask_address(message: Message, state: FSMContext):
     await state.update_data(phone=message.text)
     data = await state.get_data()
-    if data.get("delivery_method") == "delivery":
+    if data.get("delivery_method") == "доставка":
         await state.set_state(CheckoutState.address)
         await message.answer("Введите адрес доставки:")
     else:
@@ -535,7 +535,6 @@ async def process_payment_confirmation(callback: CallbackQuery, state: FSMContex
         manager_text = f"""💳 ПЛАТЁЖ ПОДТВЕРЖДЁН!
 
 🆕 НОВЫЙ ЗАКАЗ
-==============================
 
 📋 Содержимое заказа:
 {chr(10).join([f"• {get_cake_by_id(cake_id).name} × {qty} = {get_cake_by_id(cake_id).price * qty}₽" for cake_id, qty in CARTS[user_id].items()])}
@@ -557,7 +556,6 @@ async def process_payment_confirmation(callback: CallbackQuery, state: FSMContex
 • Фамилия: {callback.from_user.last_name or 'не указана'}
 
 ⏰ Время заказа: {callback.message.date.strftime("%d.%m.%Y %H:%M:%S")}
-==============================
 
 💰 СТАТУС: ПЛАТЁЖ ПОДТВЕРЖДЁН КЛИЕНТОМ
 ⚠️ ТРЕБУЕТСЯ ПРОВЕРКА ПЛАТЕЖА"""
